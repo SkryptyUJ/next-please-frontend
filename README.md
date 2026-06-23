@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# next-please — frontend
 
-## Getting Started
+Web client for the **next-please** medical queue simulation. One Next.js app
+serves two independent flows:
 
-First, run the development server:
+- **Patient** (anonymous) at `/` — pick a type, wait in a per-type queue, get
+  paired with a doctor for a fixed 20-second visit.
+- **Doctor** (authenticated) at `/doctor/*` — log in, claim a room, repeatedly
+  pick a type to see the next waiting patient, log out to release the room.
+
+The backend owns all timing: it returns `visitEndsAt` and auto-completes visits.
+Both screens count down locally from `visitEndsAt` and never run an authoritative
+timer.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000> — the patient kiosk. Doctors go to
+<http://localhost:3000/doctor/login>.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+The backend must be running and reachable (it already allows CORS from
+`http://localhost:3000`).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Configuration
 
-## Learn More
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `NEXT_PUBLIC_API_BASE_URL` | `http://localhost:8080` | Base URL of the backend API. |
 
-To learn more about Next.js, take a look at the following resources:
+Set it in `.env.local` when the backend lives elsewhere, e.g.:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+echo 'NEXT_PUBLIC_API_BASE_URL=http://localhost:8080' > .env.local
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Routes
 
-## Deploy on Vercel
+| Route | Who | Purpose |
+|-------|-----|---------|
+| `/` | Patient | Choose a type (Consultation / Check-up / Urgent). |
+| `/wait` | Patient | Live queue position; **Leave** to cancel while waiting. |
+| `/visit` | Patient | Assigned room + 20 s countdown. |
+| `/done` | Patient | Thank-you; back to start. |
+| `/doctor/login` | Doctor | Email + password sign-in. |
+| `/doctor/room` | Doctor | Claim a free room. |
+| `/doctor/types` | Doctor | Pick a type with waiting patients. |
+| `/doctor/visit` | Doctor | Paired ticket + 20 s countdown. |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Real-time
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The patient screens subscribe to `GET /api/queue/subscribe` using
+[`@microsoft/fetch-event-source`](https://www.npmjs.com/package/@microsoft/fetch-event-source)
+(native `EventSource` cannot send the `Authorization` header). A 3-second status
+poll is kept as a fallback if the stream drops. The doctor UI needs no SSE — it
+counts down from the `visitEndsAt` returned by `next-patient`.

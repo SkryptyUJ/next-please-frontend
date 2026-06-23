@@ -47,7 +47,10 @@ export default function AdminPanelPage() {
       ]);
       setPending(pendingList);
       setDoctors(allDoctors);
-      setError(null);
+      // Don't clear `error` here: actions clear it themselves before running
+      // and then call load() in their `finally`, so wiping it would hide the
+      // guard messages (e.g. "can't delete the last active admin") this
+      // refetch is meant to display alongside the refreshed lists.
     } catch (err) {
       if (handleAuthError(err)) return;
       setError("Could not load the admin data.");

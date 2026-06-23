@@ -60,8 +60,10 @@ export default function PickRoomPage() {
       router.replace("/doctor/types");
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
-        setError("That room was just taken. Pick another.");
+        // Refetch first — loadRooms clears the error on success, so set the
+        // contention message afterwards or it would be wiped immediately.
         await loadRooms();
+        setError("That room was just taken. Pick another.");
       } else if (err instanceof ApiError && err.status === 401) {
         clear();
         router.replace("/doctor/login");

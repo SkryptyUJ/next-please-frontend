@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/Button";
+import { ApiError, apiFetch } from "@/lib/api";
 import { useDoctor } from "@/lib/doctor-context";
-import { useCountdown } from "@/lib/useCountdown";
 
 const TYPE_LABELS: Record<string, string> = {
   CONSULTATION: "Consultation",
@@ -13,8 +14,9 @@ const TYPE_LABELS: Record<string, string> = {
 
 export default function DoctorVisitPage() {
   const router = useRouter();
-  const { token, visit, hydrated, clearVisit } = useDoctor();
-  const remaining = useCountdown(visit?.visitEndsAt ?? null);
+  const { token, visit, hydrated, clearVisit, clear } = useDoctor();
+  const [stopping, setStopping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -22,14 +24,37 @@ export default function DoctorVisitPage() {
     else if (!visit) router.replace("/doctor/types");
   }, [hydrated, token, visit, router]);
 
-  // The backend auto-completes the visit at `visitEndsAt`; we just return to
-  // the type picker when the local countdown ends.
-  useEffect(() => {
-    if (visit && remaining === 0) {
+  async function stop() {
+    if (!token || !visit) return;
+    setStopping(true);
+    setError(null);
+    try {
+      await apiFetch(`/api/doctors/complete-patient/${visit.ticketId}`, {
+        method: "POST",
+        token,
+      });
       clearVisit();
       router.replace("/doctor/types");
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        clear();
+        router.replace("/doctor/login");
+        return;
+      }
+      if (err instanceof ApiError && err.status === 409) {
+        // The visit is no longer in progress; treat it as already over.
+        clearVisit();
+        router.replace("/doctor/types");
+        return;
+      }
+      if (err instanceof ApiError && err.status === 403) {
+        setError("You are not the doctor running this consultation.");
+      } else {
+        setError("Could not stop the consultation. Try again.");
+      }
+      setStopping(false);
     }
-  }, [visit, remaining, clearVisit, router]);
+  }
 
   if (!hydrated || !token || !visit) {
     return (
@@ -53,12 +78,21 @@ export default function DoctorVisitPage() {
             {TYPE_LABELS[visit.type] ?? visit.type}
           </p>
         </div>
-        <div>
-          <p className="font-mono text-7xl font-semibold tabular-nums">
-            {remaining}
+
+        {error && (
+          <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
+            {error}
           </p>
-          <p className="mt-1 text-sm text-zinc-500">seconds remaining</p>
-        </div>
+        )}
+
+        <Button
+          variant="danger"
+          className="w-full py-4 text-lg"
+          onClick={stop}
+          disabled={stopping}
+        >
+          {stopping ? "Stopping…" : "Stop consultation"}
+        </Button>
       </div>
     </main>
   );

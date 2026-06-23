@@ -12,11 +12,13 @@ export function DoctorChrome({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { token, roomId, roomName, hydrated, clear } = useDoctor();
-  const isLogin = pathname === "/doctor/login";
+  // Login and the public account-request form don't require a token.
+  const isPublic =
+    pathname === "/doctor/login" || pathname === "/doctor/register";
 
   useEffect(() => {
-    if (hydrated && !token && !isLogin) router.replace("/doctor/login");
-  }, [hydrated, token, isLogin, router]);
+    if (hydrated && !token && !isPublic) router.replace("/doctor/login");
+  }, [hydrated, token, isPublic, router]);
 
   async function logout() {
     if (roomId != null && token) {
@@ -35,7 +37,7 @@ export function DoctorChrome({ children }: { children: ReactNode }) {
     router.replace("/doctor/login");
   }
 
-  if (!hydrated && !isLogin) {
+  if (!hydrated && !isPublic) {
     return (
       <main className="flex flex-1 items-center justify-center text-sm text-zinc-500">
         Loading…
@@ -45,7 +47,7 @@ export function DoctorChrome({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      {token && !isLogin && (
+      {token && !isPublic && (
         <header className="flex items-center justify-between border-b border-zinc-200 px-6 py-3 dark:border-zinc-800">
           <div>
             <p className="text-xs uppercase tracking-wide text-zinc-500">

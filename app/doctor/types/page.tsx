@@ -68,9 +68,9 @@ export default function PickTypePage() {
         { method: "POST", token },
       );
       setVisit({
-        ticketNumber: res.ticket.ticketName,
-        type: res.ticket.type,
-        visitEndsAt: res.visitEndsAt,
+        ticketId: res.id,
+        ticketNumber: res.ticketName,
+        type: res.type,
       });
       router.replace("/doctor/visit");
     } catch (err) {

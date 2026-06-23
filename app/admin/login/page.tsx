@@ -1,24 +1,23 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { Button } from "@/components/Button";
 import { Field } from "@/components/Field";
 import { ApiError, apiFetch } from "@/lib/api";
-import { useDoctor } from "@/lib/doctor-context";
+import { useAdmin } from "@/lib/admin-context";
 import type { LoginResponse } from "@/lib/types";
 
-export default function DoctorLoginPage() {
+export default function AdminLoginPage() {
   const router = useRouter();
-  const { token, hydrated, setToken } = useDoctor();
+  const { token, hydrated, setToken } = useAdmin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (hydrated && token) router.replace("/doctor/room");
+    if (hydrated && token) router.replace("/admin");
   }, [hydrated, token, router]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
@@ -30,13 +29,20 @@ export default function DoctorLoginPage() {
         method: "POST",
         body: JSON.stringify({ email, password }),
       });
+      // The single login endpoint serves both admin and doctor; only admins
+      // may open this panel.
+      if (res.role !== "ADMIN") {
+        setError("This account is not an administrator.");
+        setSubmitting(false);
+        return;
+      }
       setToken(res.token);
-      router.replace("/doctor/room");
+      router.replace("/admin");
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("Wrong email or password.");
       } else if (err instanceof ApiError && err.status === 403) {
-        setError("Your account is awaiting admin approval.");
+        setError("Your account is not active.");
       } else if (err instanceof ApiError) {
         setError(err.body || "Login failed.");
       } else {
@@ -53,9 +59,9 @@ export default function DoctorLoginPage() {
         className="w-full max-w-sm space-y-6 rounded-lg border border-zinc-200 bg-white p-6 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
       >
         <header className="space-y-1">
-          <h1 className="text-2xl font-semibold">Doctor login</h1>
+          <h1 className="text-2xl font-semibold">Admin login</h1>
           <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Sign in to start seeing patients.
+            Sign in to manage doctors.
           </p>
         </header>
 
@@ -87,16 +93,6 @@ export default function DoctorLoginPage() {
         <Button type="submit" className="w-full" disabled={submitting}>
           {submitting ? "Signing in…" : "Sign in"}
         </Button>
-
-        <p className="text-center text-sm text-zinc-500">
-          Need an account?{" "}
-          <Link
-            href="/doctor/register"
-            className="font-medium text-blue-600 hover:underline dark:text-blue-400"
-          >
-            Request one
-          </Link>
-        </p>
       </form>
     </main>
   );

@@ -15,9 +15,11 @@ const ROOM_KEY = "np_doctor_room";
 const VISIT_KEY = "np_doctor_visit";
 
 export type DoctorVisit = {
+  // The paired ticket's numeric id, needed to "Stop consultation"
+  // (POST /api/doctors/complete-patient/{ticketId}).
+  ticketId: number;
   ticketNumber: string;
   type: TicketType;
-  visitEndsAt: string;
 };
 
 type DoctorRoom = { id: number; name: string };

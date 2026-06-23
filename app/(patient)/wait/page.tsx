@@ -8,18 +8,12 @@ import { usePatient, type PatientVisit } from "@/lib/patient-context";
 import { useQueueSSE } from "@/lib/useQueueSSE";
 import type { QueueStatusResponse } from "@/lib/types";
 
-const VISIT_DURATION_MS = 20_000;
-
 // Derives the visit screen's inputs from a CALLED status when we learn about
 // the pairing via polling rather than the `patient-called` SSE event.
 function visitFromStatus(status: QueueStatusResponse): PatientVisit | null {
-  if (status.status !== "CALLED" || !status.calledAt) return null;
+  if (status.status !== "CALLED") return null;
   return {
-    roomNumber:
-      status.roomId != null ? `Room ${status.roomId}` : "your room",
-    visitEndsAt: new Date(
-      Date.parse(status.calledAt) + VISIT_DURATION_MS,
-    ).toISOString(),
+    roomNumber: status.roomId != null ? `Room ${status.roomId}` : "your room",
   };
 }
 
@@ -66,10 +60,7 @@ export default function WaitPage() {
     onQueueUpdate: applyStatus,
     onPatientCalled: (data) => {
       if (data.ticketNumber !== ticketNumber) return;
-      enterVisit({
-        roomNumber: data.roomNumber,
-        visitEndsAt: data.visitEndsAt,
-      });
+      enterVisit({ roomNumber: data.roomNumber });
     },
   });
 

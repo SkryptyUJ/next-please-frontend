@@ -63,13 +63,13 @@ export default function ChooseTypePage() {
               onClick={() => choose(t.value)}
               disabled={pending !== null}
             >
-              <span className="text-left">
+              <span className="flex-1 text-left">
                 <span className="block text-lg font-medium">{t.label}</span>
                 <span className="block text-xs text-zinc-500 dark:text-zinc-400">
                   {t.description}
                 </span>
               </span>
-              <span className="text-sm text-zinc-400">
+              <span className="shrink-0 text-sm text-zinc-400">
                 {pending === t.value ? "…" : "→"}
               </span>
             </Button>

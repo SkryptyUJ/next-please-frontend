@@ -2,14 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { useCountdown } from "@/lib/useCountdown";
 import { usePatient } from "@/lib/patient-context";
 import { useQueueSSE } from "@/lib/useQueueSSE";
 
 export default function VisitPage() {
   const router = useRouter();
   const { ticketNumber, token, visit, hydrated } = usePatient();
-  const remaining = useCountdown(visit?.visitEndsAt ?? null);
 
   // Without a ticket or an in-progress visit we can't be on this screen.
   useEffect(() => {
@@ -18,11 +16,8 @@ export default function VisitPage() {
     else if (!visit) router.replace("/wait");
   }, [hydrated, ticketNumber, visit, router]);
 
-  // End the visit when the countdown reaches 0 or the backend reports COMPLETED.
-  useEffect(() => {
-    if (visit && remaining === 0) router.replace("/done");
-  }, [visit, remaining, router]);
-
+  // The visit ends when the doctor clicks "Stop consultation"; the backend
+  // then broadcasts a COMPLETED status on our stream.
   useQueueSSE(token, {
     onQueueUpdate: (data) => {
       if (data.ticketNumber === ticketNumber && data.status === "COMPLETED") {
@@ -53,12 +48,7 @@ export default function VisitPage() {
             {visit.roomNumber}
           </p>
         </div>
-        <div>
-          <p className="font-mono text-7xl font-semibold tabular-nums">
-            {remaining}
-          </p>
-          <p className="mt-1 text-sm text-zinc-500">seconds remaining</p>
-        </div>
+        <p className="text-sm text-zinc-500">In consultation — please wait.</p>
         <p className="font-mono text-sm text-zinc-500">{ticketNumber}</p>
       </div>
     </main>

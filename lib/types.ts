@@ -1,8 +1,10 @@
-export type Role = "DOCTOR" | "PATIENT";
+export type Role = "ADMIN" | "DOCTOR" | "PATIENT";
 
 export type TicketType = "CONSULTATION" | "CHECKUP" | "URGENT";
 
 export type TicketStatus = "WAITING" | "CALLED" | "COMPLETED" | "CANCELLED";
+
+export type UserStatus = "PENDING" | "ACTIVE";
 
 export type LoginResponse = {
   token: string;
@@ -10,6 +12,15 @@ export type LoginResponse = {
   name: string;
   surname: string;
   role: Role;
+};
+
+// Admin doctor-overview / pending-request list item.
+export type AdminDoctor = {
+  id: number;
+  email: string;
+  name: string;
+  surname: string;
+  status: UserStatus;
 };
 
 export type PatientTokenResponse = {
@@ -55,16 +66,12 @@ export type TicketDetails = {
   type: TicketType;
 };
 
-// POST /api/doctors/next-patient response.
-export type VisitResponse = {
-  ticket: TicketDetails;
-  visitEndsAt: string;
-};
+// POST /api/doctors/next-patient now returns the paired ticket directly.
+export type VisitResponse = TicketDetails;
 
 export type QueueUpdateEvent = QueueStatusResponse;
 
 export type PatientCalledEvent = {
   ticketNumber: string;
   roomNumber: string;
-  visitEndsAt: string;
 };

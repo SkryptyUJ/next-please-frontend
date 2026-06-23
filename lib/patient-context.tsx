@@ -15,7 +15,6 @@ const VISIT_KEY = "np_patient_visit";
 
 export type PatientVisit = {
   roomNumber: string;
-  visitEndsAt: string;
 };
 
 type Snapshot = {

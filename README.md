@@ -16,6 +16,9 @@ consultation**, which moves the patient to the done screen via SSE.
 
 ## Getting started
 
+Requires **Node ≥ 20.19** (see `.nvmrc`; `nvm use` picks it up). Older versions
+fail the test run with `ERR_REQUIRE_ESM`.
+
 ```bash
 npm install
 npm run dev
@@ -70,3 +73,40 @@ The patient screens subscribe to `GET /api/queue/subscribe` using
 poll is kept as a fallback if the stream drops. When the doctor clicks **Stop
 consultation** (`POST /api/doctors/complete-patient/{ticketId}`), the backend
 broadcasts a `COMPLETED` `queue-update` that moves the patient to `/done`.
+
+## Testing
+
+```bash
+npm test          # unit/component tests (vitest + Testing Library)
+npm run e2e       # builds, starts the prod server, runs Cypress headless
+npm run e2e:dev   # same, against `next dev` — faster for local iteration
+npm run cy:open   # interactive Cypress runner (server must already be up)
+```
+
+The Cypress specs in `cypress/e2e/` cover the patient, doctor, and admin flows.
+They need **no backend** — every `/api/*` call is stubbed with `cy.intercept`,
+and the patient SSE stream is driven through the same stubs.
+
+## Docker
+
+The app ships as a self-contained image built from Next.js
+[standalone output](https://nextjs.org/docs/app/api-reference/config/next-config-js/output):
+
+```bash
+docker build -t next-please-frontend .
+docker run --rm -p 3000:3000 next-please-frontend
+```
+
+`NEXT_PUBLIC_API_BASE_URL` is baked in at build time (it runs in the browser, so
+the default `http://localhost:8080` points at the host). Override it with a
+build arg:
+
+```bash
+docker build --build-arg NEXT_PUBLIC_API_BASE_URL=https://api.example.com \
+  -t next-please-frontend .
+```
+
+## CI
+
+`.github/workflows/ci.yml` runs on every push and pull request: lint + unit
+tests, a production build, the Cypress E2E suite, and a Docker image build.

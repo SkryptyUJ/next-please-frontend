@@ -8,7 +8,14 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "e2e": "npm run build && start-server-and-test start http://localhost:3000 cy:run",
+    "e2e:dev": "start-server-and-test dev http://localhost:3000 cy:run"
+  },
+  "engines": {
+    "node": ">=20.19"
   },
   "dependencies": {
     "@microsoft/fetch-event-source": "^2.0.1",
@@ -26,9 +33,11 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^6.0.3",
+    "cypress": "^15.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "jsdom": "^29.1.1",
+    "start-server-and-test": "^2.0.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.9"

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Cypress specs are type-checked via cypress/tsconfig.json and run by
+    // Cypress, not this config.
+    "cypress/**",
   ]),
 ]);
 

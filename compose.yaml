@@ -1,0 +1,65 @@
+# Convenience full-stack runner from the frontend repo: Postgres + Spring
+# backend + this frontend. The backend is built from a sibling checkout, so
+# next-please-backend must sit next to this repo:
+#
+#   <parent>/next-please-backend
+#   <parent>/next-please-frontend   <- you are here
+#
+# Run:  docker compose up --build
+#       frontend -> http://localhost:3000
+#       backend  -> http://localhost:8080
+#
+# NOTE: the canonical full-stack compose lives in next-please-deploy; keep this
+# one in sync with it if you change service config.
+
+services:
+  postgres:
+    image: 'postgres:latest'
+    environment:
+      - 'POSTGRES_DB=mydatabase'
+      - 'POSTGRES_PASSWORD=secret'
+      - 'POSTGRES_USER=myuser'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U myuser -d mydatabase"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - next-please-network
+
+  app:
+    build:
+      context: ../next-please-backend
+      dockerfile: Dockerfile
+    ports:
+      - '8080:8080'
+    environment:
+      - 'SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/mydatabase'
+      - 'SPRING_DATASOURCE_USERNAME=myuser'
+      - 'SPRING_DATASOURCE_PASSWORD=secret'
+      - 'SPRING_JPA_HIBERNATE_DDL_AUTO=validate'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - next-please-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Baked in at build time and resolved by the browser, so it must be a
+        # host-reachable URL (NOT the `app` service name). The backend publishes
+        # 8080 on the host, so localhost:8080 works.
+        NEXT_PUBLIC_API_BASE_URL: http://localhost:8080
+    ports:
+      - '3000:3000'
+    depends_on:
+      - app
+    networks:
+      - next-please-network
+
+networks:
+  next-please-network:
+    driver: bridge
